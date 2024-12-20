@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Modal, FloatButton, Pagination, Input, Form, Button, Space, Tag, Tooltip, Spin, Progress, notification } from 'antd';
+import { Table, Modal, FloatButton, Pagination, Input, Form, Button, Space, Tag, Tooltip, Spin, Progress, notification, Steps } from 'antd';
 import { Link } from 'react-router-dom';
 import { 
   PlusOutlined, 
@@ -133,7 +133,10 @@ function HomePage() {
       title: 'Post Title',
       dataIndex: 'post_title',
       key: 'post_title',
-      render: (text, record) => <Link to={`/details/${record.post_id}`}>{text}</Link>,
+      render: (text, record) => (
+        // Change this line to include the full post_id format
+        <Link to={`/details/${record.post_id}`}>{text}</Link>
+      ),
     },
     {
       title: 'Subreddit',
@@ -298,8 +301,29 @@ function HomePage() {
     }
   };
 
-  return (
+  return (    
     <div className="home-page" style={{ padding: '24px' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <Steps
+          progressDot        
+          current={3}
+          size = "small"
+          items={[
+            {
+              title: 'Fetch Data',
+              description: 'Collect Reddit comments from subreddits or specific URLs',
+            },
+            {
+              title: 'Analyze Sentiment',
+              description: 'Process comments to determine sentiment using AI',
+            },
+            {
+              title: 'Get Analytics',
+              description: 'View comprehensive insights and sentiment breakdowns',
+            },
+          ]}
+        />
+      </div>
       <div style={{ marginBottom: '16px' }}>
         <Input.Search
           placeholder="Search by post title"
@@ -332,10 +356,13 @@ function HomePage() {
         trigger="hover"
         type="primary"
         style={{
-          right: 24,
-          bottom: 24,
+          position: "fixed",
+          right: 50,
+          bottom: 50,
+          zIndex: 1000,
+          width: "60px",
+          height: "60px", 
         }}
-        size="large"
         icon={<PlusOutlined />}
         tooltip="Fetch Data from Reddit"
       >
