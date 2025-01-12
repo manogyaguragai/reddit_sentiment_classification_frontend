@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Table, Modal, FloatButton, Pagination, Input, Form, Button, Space, Tag, Tooltip, Spin, Progress, notification, Steps } from 'antd';
+import { Table, Modal, FloatButton, Pagination, Input, Form, Button, Space, Tag, Tooltip, Spin, Progress, notification, Steps, Select } from 'antd';
 import { Link } from 'react-router-dom';
 import { 
   PlusOutlined, 
@@ -23,20 +23,77 @@ function HomePage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [postUrlModalState, setPostUrlModalState] = useState('input');
   const [postUrlErrorMessage, setPostUrlErrorMessage] = useState('');
+  const [subredditOptions, setSubredditOptions] = useState([]);
+  const [sentimentOptions, setSentimentOptions] = useState([]);
+  const [selectedSubreddit, setSelectedSubreddit] = useState(null);
+  const [selectedSentiment, setSelectedSentiment] = useState(null);
 
   useEffect(() => {
     fetchPosts(currentPage, searchQuery);
-  }, [currentPage, searchQuery]);
+    fetchSubreddits();
+    fetchSentiments();
+  }, [currentPage, searchQuery, selectedSubreddit, selectedSentiment]);
 
+  const fetchSubreddits = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/subreddits');
+      const options = [
+        { label: 'All Subreddits', value: null },
+        ...response.data.map(subreddit => ({
+          label: subreddit,
+          value: subreddit,
+        }))
+      ];
+      setSubredditOptions(options);
+    } catch (error) {
+      console.error('Error fetching subreddits:', error);
+    }
+  };
+
+  const fetchSentiments = async () => {
+    try {
+      const response = await axios.get('http://127.0.0.1:8000/sentiments');
+      const options = [
+        { label: 'All Sentiments', value: null },
+        ...response.data.map(sentiment => ({
+          label: sentiment,
+          value: sentiment,
+        })),
+      ];
+      setSentimentOptions(options);
+    } catch (error) {
+      console.error('Error fetching sentiments:', error);
+    }
+  };
+
+  const handleSubredditChange = (value) => {
+    setSelectedSubreddit(value);
+    setCurrentPage(1);
+  };
+  
+  const handleSentimentChange = (value) => {
+    setSelectedSentiment(value);
+    setCurrentPage(1);
+  };
   const fetchPosts = async (pageNumber, searchQuery) => {
     setLoading(true);
     try {
+      const params = {
+        'page_number': pageNumber,
+        'documents_per_page': '10',
+        'post_search_query': searchQuery,
+      };
+
+      if (selectedSubreddit) {
+        params.subreddit = selectedSubreddit;
+      }
+
+      if (selectedSentiment) {
+        params.sentiment = selectedSentiment;
+      }
+
       const response = await axios.get('http://127.0.0.1:8000/posts/all', {
-        params: {
-          'page_number': pageNumber,
-          'documents_per_page': '10',
-          'post_search_query': searchQuery,
-        },
+        params,
         headers: {
           'accept': 'application/json',
         },
@@ -134,7 +191,6 @@ function HomePage() {
       dataIndex: 'post_title',
       key: 'post_title',
       render: (text, record) => (
-        // Change this line to include the full post_id format
         <Link to={`/details/${record.post_id}`}>{text}</Link>
       ),
     },
@@ -202,112 +258,13 @@ function HomePage() {
     setCurrentPage(page);
   };
 
-  const renderSubredditModalContent = () => {
-    switch (subredditModalState) {
-      case 'loading':
-        return (
-          <div style={{ textAlign: 'center', padding: '24px' }}>
-            <LoadingOutlined style={{ fontSize: 48, marginBottom: 24, color: '#1890ff' }} spin />
-            <div style={{ fontSize: 16 }}>Fetching posts from subreddit...</div>
-          </div>
-        );
-      
-      case 'success':
-        return (
-          <div style={{ textAlign: 'center', padding: '24px' }}>
-            <CheckCircleOutlined style={{ fontSize: 48, marginBottom: 24, color: '#52c41a' }} />
-            <div style={{ fontSize: 16 }}>Successfully fetched posts!</div>
-          </div>
-        );
-      
-      case 'error':
-        return (
-          <div style={{ textAlign: 'center', padding: '24px' }}>
-            <CloseCircleOutlined style={{ fontSize: 48, marginBottom: 24, color: '#ff4d4f' }} />
-            <div style={{ fontSize: 16, color: '#ff4d4f' }}>{errorMessage}</div>
-          </div>
-        );
-      
-      default:
-        return (
-          <Form onFinish={fetchSubredditPosts}>
-            <Form.Item
-              name="subreddit"
-              rules={[{ required: true, message: 'Please input the subreddit name!' }]}
-            >
-              <Input prefix={<RedditOutlined />} placeholder="Enter subreddit name" />
-            </Form.Item>
-            <Form.Item
-              name="limit"
-              rules={[{ required: true, message: 'Please input the number of posts to fetch!' }]}
-            >
-              <Input type="number" placeholder="Enter limit" />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Fetch Posts
-              </Button>
-            </Form.Item>
-          </Form>
-        );
-    }
-  };
-
-  const renderPostUrlModalContent = () => {
-    switch (postUrlModalState) {
-      case 'loading':
-        return (
-          <div style={{ textAlign: 'center', padding: '24px' }}>
-            <LoadingOutlined style={{ fontSize: 48, marginBottom: 24, color: '#1890ff' }} spin />
-            <div style={{ fontSize: 16 }}>Fetching posts from URL...</div>
-          </div>
-        );
-      
-      case 'success':
-        return (
-          <div style={{ textAlign: 'center', padding: '24px' }}>
-            <CheckCircleOutlined style={{ fontSize: 48, marginBottom: 24, color: '#52c41a' }} />
-            <div style={{ fontSize: 16 }}>Successfully fetched posts!</div>
-          </div>
-        );
-      
-      case 'error':
-        return (
-          <div style={{ textAlign: 'center', padding: '24px' }}>
-            <CloseCircleOutlined style={{ fontSize: 48, marginBottom: 24, color: '#ff4d4f' }} />
-            <div style={{ fontSize: 16, color: '#ff4d4f' }}>{postUrlErrorMessage}</div>
-          </div>
-        );
-      
-      default:
-        return (
-          <Form onFinish={onPostUrlSubmit}>
-            <Form.Item
-              name="postUrl"
-              rules={[
-                { required: true, message: 'Please input the post URL!' },
-                { type: 'url', message: 'Please enter a valid URL!' }
-              ]}
-            >
-              <Input prefix={<LinkOutlined />} placeholder="Enter post URL" />
-            </Form.Item>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                Fetch Post
-              </Button>
-            </Form.Item>
-          </Form>
-        );
-    }
-  };
-
   return (    
     <div className="home-page" style={{ padding: '24px' }}>
       <div style={{ marginBottom: '32px' }}>
         <Steps
           progressDot        
           current={3}
-          size = "small"
+          size="small"
           items={[
             {
               title: 'Fetch Data',
@@ -324,82 +281,134 @@ function HomePage() {
           ]}
         />
       </div>
-      <div style={{ marginBottom: '16px' }}>
-        <Input.Search
-          placeholder="Search by post title"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          onSearch={() => fetchPosts(1, searchQuery)}
-          enterButton
-        />
-      </div>
-
-      <Spin spinning={loading} tip="Loading...">
-        <Table 
-          dataSource={posts} 
-          columns={columns} 
-          rowKey="post_id"
-          pagination={false}
-        />
-        <div style={{ display: 'flex', justifyContent: 'center', marginTop: '24px' }}>
-          <Pagination
-            current={currentPage}
-            total={totalPages * 10}
-            pageSize={10}
-            onChange={handlePageChange}
-            showSizeChanger={false}
+      <div style={{ 
+        display: 'flex', 
+        width: '100%', 
+        marginBottom: '16px', 
+        gap: '16px',
+        alignItems: 'center' 
+      }}>
+        <div style={{ flex: 1 }}>
+          <Input.Search
+            placeholder="Search by post title"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            onSearch={() => {
+              setCurrentPage(1);
+              fetchPosts(1, searchQuery);
+            }}
+            enterButton
+            style={{ width: '100%' }}
           />
         </div>
-      </Spin>
+        <div style={{ flex: 0 }}>
+          <Select
+            value={selectedSubreddit}
+            onChange={handleSubredditChange}
+            options={subredditOptions}
+            style={{ width: 200 }}
+            placeholder="Select Subreddit"
+            allowClear
+          />
+        </div>
+        <div style={{ flex: 0 }}>
+          <Select
+            value={selectedSentiment}
+            onChange={handleSentimentChange}
+            options={sentimentOptions}
+            style={{ width: 200 }}
+            placeholder="Select Sentiment"
+            allowClear
+          />
+        </div>
+      </div>
 
-      <FloatButton.Group
-        trigger="hover"
+      <Table
+        loading={loading}
+        columns={columns}
+        dataSource={posts}
+        pagination={false}
+        rowKey="post_id"
+      />
+      
+      <Pagination
+        current={currentPage}
+        total={totalPages * 10}
+        pageSize={10}
+        onChange={handlePageChange}
+        showSizeChanger={false}
+        style={{ marginTop: '16px', textAlign: 'center' }}
+      />
+
+      <FloatButton
+        icon={<RedditOutlined />}
         type="primary"
+        onClick={() => setIsSubredditModalVisible(true)}
         style={{
-          position: "fixed",
-          right: 50,
-          bottom: 50,
-          zIndex: 1000,
-          width: "60px",
-          height: "60px", 
+          position: 'fixed',
+          bottom: 16,
+          right: 16,
         }}
-        icon={<PlusOutlined />}
-        tooltip="Fetch Data from Reddit"
-      >
-        <FloatButton
-          tooltip="Fetch from subreddit"
-          icon={<RedditOutlined />}
-          onClick={() => setIsSubredditModalVisible(true)}
-        />
-        <FloatButton
-          tooltip="Fetch from post URL"
-          icon={<LinkOutlined />}
-          onClick={() => setIsPostUrlModalVisible(true)}
-        />
-      </FloatButton.Group>
+      />
 
       <Modal
-        title="Fetch from Subreddit"
-        open={isSubredditModalVisible}
-        onCancel={() => {
-          setIsSubredditModalVisible(false);
-          setSubredditModalState('input');
-        }}
+        title="Fetch Reddit Comments by Subreddit"
+        visible={isSubredditModalVisible}
+        onCancel={() => setIsSubredditModalVisible(false)}
         footer={null}
       >
-        {renderSubredditModalContent()}
+        <Form
+          onFinish={fetchSubredditPosts}
+        >
+          <Form.Item
+            name="subreddit"
+            label="Subreddit"
+            rules={[{ required: true, message: 'Please enter a subreddit!' }]}
+          >
+            <Input placeholder="e.g. r/learnprogramming" />
+          </Form.Item>
+          <Form.Item
+            name="limit"
+            label="Limit"
+            initialValue={100}
+            rules={[{ required: true, message: 'Please specify the limit!' }]}
+          >
+            <Input type="number" />
+          </Form.Item>
+          {subredditModalState === 'loading' && <Spin />}
+          {subredditModalState === 'error' && <p style={{ color: 'red' }}>{errorMessage}</p>}
+          <Form.Item>
+            <Button type="primary" htmlType="submit" disabled={subredditModalState === 'loading'}>
+              Fetch Posts
+            </Button>
+          </Form.Item>
+        </Form>
       </Modal>
 
       <Modal
-        title="Fetch from Post URL"
-        open={isPostUrlModalVisible}
-        onCancel={() => {
-          setIsPostUrlModalVisible(false);
-          setPostUrlModalState('input');
-        }}
+        title="Fetch Reddit Comments by URL"
+        visible={isPostUrlModalVisible}
+        onCancel={() => setIsPostUrlModalVisible(false)}
         footer={null}
       >
-        {renderPostUrlModalContent()}
+        <Form
+          onFinish={onPostUrlSubmit}
+        >
+          <Form.Item
+            name="postUrl"
+            label="Post URL"
+            rules={[{ required: true, message: 'Please enter a Reddit post URL!' }]}
+          >
+            <Input placeholder="e.g. https://www.reddit.com/r/learnprogramming/comments/xyz" />
+          </Form.Item>
+          {postUrlModalState === 'loading' && <Spin />}
+          {postUrlModalState === 'error' && <p style={{ color: 'red' }}>{postUrlErrorMessage}</p>}
+          <Form.Item>
+            <Button type="primary" htmlType="submit" disabled={postUrlModalState === 'loading'}>
+              Fetch Comments
+            </Button>
+          </Form.Item>
+        </Form>
       </Modal>
     </div>
   );
