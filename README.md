@@ -27,7 +27,7 @@ This project is a React-based frontend application designed to fetch, display, a
 1. Clone the repository:
    ```bash
    git clone https://github.com/manogyaguragai/reddit_sentiment_classification_frontend.git
-   cd <repository-folder>reddit_sentiment_classification_frontend
+   cd reddit_sentiment_classification_frontend
    ```
 2. Install dependencies:
    ```bash
