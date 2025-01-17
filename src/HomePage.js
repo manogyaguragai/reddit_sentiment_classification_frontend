@@ -75,6 +75,7 @@ function HomePage() {
     setSelectedSentiment(value);
     setCurrentPage(1);
   };
+
   const fetchPosts = async (pageNumber, searchQuery) => {
     setLoading(true);
     try {
@@ -340,16 +341,24 @@ function HomePage() {
         style={{ marginTop: '16px', textAlign: 'center' }}
       />
 
-      <FloatButton
-        icon={<RedditOutlined />}
-        type="primary"
-        onClick={() => setIsSubredditModalVisible(true)}
+      <FloatButton.Group
         style={{
           position: 'fixed',
           bottom: 16,
           right: 16,
         }}
-      />
+      >
+        <FloatButton
+          icon={<RedditOutlined />}
+          tooltip="Fetch by Subreddit"
+          onClick={() => setIsSubredditModalVisible(true)}
+        />
+        <FloatButton
+          icon={<LinkOutlined />}
+          tooltip="Fetch by URL"
+          onClick={() => setIsPostUrlModalVisible(true)}
+        />
+      </FloatButton.Group>
 
       <Modal
         title="Fetch Reddit Comments by Subreddit"
